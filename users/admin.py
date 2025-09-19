@@ -1,0 +1,17 @@
+from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from .models import CustomUser, PassengerProfile, DriverProfile
+from .forms import CustomUserCreationForm, CustomUserChangeForm
+
+class CustomUserAdmin(UserAdmin):
+    add_form = CustomUserCreationForm
+    form = CustomUserChangeForm
+    model = CustomUser
+    list_display = ['username', 'email', 'user_type', 'phone']
+    fieldsets = UserAdmin.fieldsets + (
+        (None, {'fields': ('user_type', 'phone')}),
+    )
+
+admin.site.register(CustomUser, CustomUserAdmin)
+admin.site.register(PassengerProfile)
+admin.site.register(DriverProfile)
