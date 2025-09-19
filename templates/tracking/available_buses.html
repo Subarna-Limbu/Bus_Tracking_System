@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Available Buses - Bus Tracking System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'user_home' %}">
+                <i class="bi bi-bus-front"></i> Bus Tracking System
+            </a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-bus-front me-2"></i>
+                    Available Buses from {{ start_stop.name }} to {{ end_stop.name }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>Travel Date:</strong> {{ travel_date }}
+                </div>
+
+                <div class="row">
+                    {% for bus in available_buses %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">{{ bus.bus_number }} - {{ bus.get_bus_type_display }}</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <p><strong>License Plate:</strong><br>{{ bus.license_plate }}</p>
+                                        <p><strong>Total Seats:</strong><br>{{ bus.total_seats }}</p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p><strong>Capacity:</strong><br>{{ bus.capacity }}</p>
+                                        <p><strong>Available Seats:</strong><br>{{ bus.seats.filter.is_available.count }}</p>
+                                    </div>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <a href="{% url 'bus_details' bus.id %}?start_stop={{ start_stop.id }}&end_stop={{ end_stop.id }}&travel_date={{ travel_date }}"
+                                       class="btn btn-primary">
+                                        <i class="bi bi-eye me-2"></i>View Details & Book
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12">
+                        <div class="alert alert-warning text-center">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            No buses available for this route on {{ travel_date }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="text-center mt-4">
+                    <a href="{% url 'user_home' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Search
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -20,6 +20,8 @@ from django.urls import path, include
 from django.views.generic.base import TemplateView
 from users import views
 from django.contrib.auth import views as auth_views
+from users import views as user_views
+from tracking import views as tracking_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -33,4 +35,14 @@ urlpatterns = [
     path('register/', views.register, name='register'),
     path('login/', views.custom_login, name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('driver-pending/', views.driver_pending, name='driver_pending'),
+    path('driver-dashboard/', views.driver_dashboard, name='driver_dashboard'),
+    path('tracking/', include('tracking.urls')),
+     path('bus-map/', tracking_views.bus_map, name='bus_map'),
+    path('find-buses/', tracking_views.find_buses, name='find_buses'),
+    path('bus/<int:bus_id>/', tracking_views.bus_details, name='bus_details'),
+    path('book-seat/', tracking_views.book_seat, name='book_seat'),
+     path('', user_views.user_home, name='user_home'),
+     path('driver/', include('drivers.urls')),
+    
 ]

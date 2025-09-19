@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bus Map - Bus Tracking System</title>
+    <!-- Manual Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+        .search-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+        .stop-marker {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'user_home' %}">
+                <i class="bi bi-bus-front"></i> Bus Tracking System
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">Welcome, {{ user.username }}</span>
+                <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Left Panel - Search and Controls -->
+            <div class="col-md-4">
+                <div class="search-panel">
+                    <h4><i class="bi bi-search me-2"></i>Find Your Route</h4>
+                    
+                    <form id="routeForm" method="post" action="{% url 'tracking:find_routes' %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Pickup Stop</label>
+                            <select class="form-select" id="pickupStop" name="pickup_stop" required>
+                                <option value="">Select pickup stop</option>
+                                {% for stop in bus_stops %}
+                                <option value="{{ stop.id }}">{{ stop.name }} ({{ stop.code }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Destination Stop</label>
+                            <select class="form-select" id="destinationStop" name="destination_stop" required>
+                                <option value="">Select destination stop</option>
+                                {% for stop in bus_stops %}
+                                <option value="{{ stop.id }}">{{ stop.name }} ({{ stop.code }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-signpost-split me-2"></i>Find Routes
+                        </button>
+                    </form>
+                    
+                    <hr>
+                    
+                    <div class="mt-3">
+                        <h6>Available Routes</h6>
+                        <div class="list-group">
+                            {% for route in routes %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ route.name }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ route.total_distance }} km • {{ route.estimated_duration }} min</small>
+                                    </div>
+                                    <span class="badge bg-primary">{{ route.code }}</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Panel - Map -->
+            <div class="col-md-8">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize map
+        const map = L.map('map').setView([27.7172, 85.3182], 12); // Kathmandu coordinates
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Add bus stops to map
+        const busStops = {{ bus_stops_geojson|safe }};
+        
+        // Create marker layer for bus stops
+        const busStopLayer = L.geoJSON(busStops, {
+            pointToLayer: function(feature, latlng) {
+                return L.marker(latlng, {
+                    icon: L.divIcon({
+                        className: 'stop-marker',
+                        html: '<div style="background-color: #dc3545; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold;">🚌</div>',
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    })
+                });
+            },
+            onEachFeature: function(feature, layer) {
+                // Popup content for each bus stop
+                const popupContent = `
+                    <strong>${feature.properties.name}</strong><br>
+                    <small>${feature.properties.code}</small><br>
+                    <small>${feature.properties.address || 'No address available'}</small><br>
+                    <button class="btn btn-sm btn-primary mt-2" onclick="selectStop(${feature.properties.id}, '${feature.properties.name}')">
+                        Select as Pickup
+                    </button>
+                    <button class="btn btn-sm btn-success mt-2" onclick="selectStop(${feature.properties.id}, '${feature.properties.name}', 'destination')">
+                        Select as Destination
+                    </button>
+                `;
+                layer.bindPopup(popupContent);
+            }
+        }).addTo(map);
+        
+        // Fit map to show all bus stops
+        map.fitBounds(busStopLayer.getBounds());
+        
+        // Function to select stop from map click
+        function selectStop(stopId, stopName, type = 'pickup') {
+            const selectElement = document.getElementById(type === 'pickup' ? 'pickupStop' : 'destinationStop');
+            selectElement.value = stopId;
+            
+            // Show notification
+            alert(`Selected ${stopName} as ${type === 'pickup' ? 'pickup' : 'destination'} stop`);
+        }
+        
+        // Form validation
+        document.getElementById('routeForm').addEventListener('submit', function(e) {
+            const pickupStop = document.getElementById('pickupStop').value;
+            const destinationStop = document.getElementById('destinationStop').value;
+            
+            if (!pickupStop || !destinationStop) {
+                e.preventDefault();
+                alert('Please select both pickup and destination stops!');
+                return;
+            }
+            
+            if (pickupStop === destinationStop) {
+                e.preventDefault();
+                alert('Pickup and destination stops cannot be the same!');
+                return;
+            }
+        });
+    </script>
+</body>
+</html>

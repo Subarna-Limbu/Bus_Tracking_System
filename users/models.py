@@ -24,6 +24,8 @@ class DriverProfile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     license_number = models.CharField(max_length=50)
     years_experience = models.IntegerField(default=0)
+    is_verified = models.BooleanField(default=False)  # Add this field
+    verification_date = models.DateTimeField(null=True, blank=True)
     
     def __str__(self):
-        return f"Driver: {self.user.username}"
+        return f"Driver: {self.user.username} (Verified: {self.is_verified})"

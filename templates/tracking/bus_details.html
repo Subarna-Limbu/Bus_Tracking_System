@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ bus.bus_number }} Details - Bus Tracking System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .seat-map {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .seat {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .seat.available {
+            background-color: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+        .seat.occupied {
+            background-color: #dc3545;
+            color: white;
+            border-color: #dc3545;
+            cursor: not-allowed;
+        }
+        .seat.selected {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+            transform: scale(1.1);
+        }
+        .driver-seat {
+            grid-column: 2;
+            background-color: #6c757d !important;
+            color: white !important;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'user_home' %}">
+                <i class="bi bi-bus-front"></i> Bus Tracking System
+            </a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-bus-front me-2"></i>
+                    {{ bus.bus_number }} - {{ bus.get_bus_type_display }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <!-- Route Information -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Route Information</h6>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>From:</strong> {{ start_stop.name }}</p>
+                                <p><strong>To:</strong> {{ end_stop.name }}</p>
+                                <p><strong>Date:</strong> {{ travel_date }}</p>
+                                <p><strong>Bus:</strong> {{ bus.bus_number }} ({{ bus.license_plate }})</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Bus Layout</h6>
+                            </div>
+                            <div class="card-body text-center">
+                                <i class="bi bi-bus-front display-1 text-primary"></i>
+                                <p class="mt-2">{{ bus.total_seats }} Seats • {{ bus.capacity }} Capacity</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seat Selection -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Select Your Seat</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Green seats are available, red seats are occupied. Click on a green seat to select it.
+                        </div>
+
+                        <div class="seat-map">
+                            <!-- Driver's seat -->
+                            <div class="seat driver-seat">
+                                <i class="bi bi-person"></i>
+                            </div>
+                            
+                            <!-- Passenger seats -->
+                            {% for seat in seats %}
+                            <div class="seat {% if seat.is_available %}available{% else %}occupied{% endif %}" 
+                                 data-seat-id="{{ seat.id }}"
+                                 data-seat-number="{{ seat.seat_number }}"
+                                 onclick="selectSeat(this)">
+                                {{ seat.seat_number }}
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div id="selected-seat-info" class="alert alert-success mt-3" style="display: none;">
+                            <i class="bi bi-check-circle me-2"></i>
+                            <span id="selected-seat-text">No seat selected</span>
+                        </div>
+
+                        <div class="text-center mt-3">
+                            <button id="book-btn" class="btn btn-primary btn-lg" disabled 
+                                    data-bs-toggle="modal" data-bs-target="#confirmationModal">
+                                <i class="bi bi-ticket-perforated me-2"></i>
+                                Confirm Seat Selection
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="text-center">
+                    <a href="{% url 'user_home' %}" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Search
+                    </a>
+                    <a href="{% url 'tracking:map_view' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-map me-2"></i>View Route Map
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Booking</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to book <strong id="confirm-seat-number"></strong>?</p>
+                    <p>This will reserve your seat and notify the driver.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmBooking()">Yes, Confirm Booking</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Booking Confirmed!</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center">
+                        <i class="bi bi-check-circle-fill display-1 text-success"></i>
+                        <h4 class="mt-3">Seat Reserved Successfully!</h4>
+                        <p>Your seat <strong id="success-seat-number"></strong> has been reserved.</p>
+                        <p>The driver has been notified of your booking.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">Continue</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let selectedSeatId = null;
+        let selectedSeatNumber = null;
+
+        function selectSeat(seatElement) {
+            if (seatElement.classList.contains('occupied')) {
+                return; // Can't select occupied seats
+            }
+
+            // Remove previous selection
+            document.querySelectorAll('.seat.selected').forEach(seat => {
+                seat.classList.remove('selected');
+            });
+
+            // Add new selection
+            seatElement.classList.add('selected');
+            selectedSeatId = seatElement.dataset.seatId;
+            selectedSeatNumber = seatElement.dataset.seatNumber;
+
+            // Update selection info
+            document.getElementById('selected-seat-text').textContent = 
+                `Selected: Seat ${selectedSeatNumber}`;
+            document.getElementById('selected-seat-info').style.display = 'block';
+            document.getElementById('book-btn').disabled = false;
+
+            // Update confirmation modal
+            document.getElementById('confirm-seat-number').textContent = `Seat ${selectedSeatNumber}`;
+        }
+
+        function confirmBooking() {
+            if (!selectedSeatId) return;
+
+            // Send booking request to server
+            fetch('{% url "book_seat" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: new URLSearchParams({
+                    'bus_id': '{{ bus.id }}',
+                    'seat_id': selectedSeatId,
+                    'start_stop_id': '{{ start_stop.id }}',
+                    'end_stop_id': '{{ end_stop.id }}',
+                    'travel_date': '{{ travel_date }}'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success modal
+                    document.getElementById('success-seat-number').textContent = `Seat ${selectedSeatNumber}`;
+                    const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                    successModal.show();
+                    
+                    // Close confirmation modal
+                    const confirmationModal = bootstrap.Modal.getInstance(document.getElementById('confirmationModal'));
+                    confirmationModal.hide();
+                    
+                    // Update seat status
+                    const seatElement = document.querySelector(`[data-seat-id="${selectedSeatId}"]`);
+                    seatElement.classList.remove('available', 'selected');
+                    seatElement.classList.add('occupied');
+                    seatElement.onclick = null;
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            });
+        }
+    </script>
+</body>
+</html>

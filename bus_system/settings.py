@@ -39,8 +39,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'users',
+    # 'django.contrib.gis',
+    # 'leaflet',  
     'tracking',
     'booking',
+    'notifications',
+    'drivers',
 ]
 
 # Set custom user model
@@ -62,6 +66,16 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "bus_system.urls"
+
+# Leaflet configuration
+LEAFLET_CONFIG = {
+    'DEFAULT_CENTER': (27.7172, 85.3182),  # Kathmandu coordinates
+    'DEFAULT_ZOOM': 12,
+    'MIN_ZOOM': 3,
+    'MAX_ZOOM': 18,
+    'SCALE': 'metric',
+    'ATTRIBUTION_PREFIX': 'Powered by Leaflet',
+}
 
 TEMPLATES = [
     {
@@ -87,7 +101,7 @@ WSGI_APPLICATION = "bus_system.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
+        "ENGINE":  'django.db.backends.sqlite3',
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }

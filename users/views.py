@@ -5,6 +5,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.urls import reverse
 from .forms import PassengerRegistrationForm, DriverRegistrationForm, DriverAuthenticationForm
 from .models import PassengerProfile, DriverProfile
+from django.utils import timezone
 
 def register(request):
     user_type = request.GET.get('type', 'passenger')
@@ -62,20 +63,33 @@ def custom_login(request):
         'success': success
     })
 
+
 @login_required
 def dashboard(request):
+    """Main dashboard redirect"""
     if request.user.user_type == 'passenger':
-        return redirect('user_home')  # Redirect to user home instead of passenger dashboard
+        return redirect('user_home')
     elif request.user.user_type == 'driver':
-        return redirect('driver_dashboard')
+        # Check if driver is verified
+        try:
+            if request.user.driverprofile.is_verified:
+                return redirect('driver_dashboard')
+            else:
+                return redirect('driver_pending')
+        except:
+            return redirect('driver_pending')
     else:
         return redirect('admin_dashboard')
     
 @login_required
 def user_home(request):
-    """New view for user home page with route selection"""
-    return render(request, 'user_home.html')
-
+    """User home page with route selection"""
+    from tracking.models import BusStop
+    
+    bus_stops = BusStop.objects.all()
+    return render(request, 'user_home.html', {
+        'bus_stops': bus_stops,
+    })
 @login_required
 def profile_dashboard(request):
     """Profile dashboard for passengers"""
@@ -92,8 +106,52 @@ def passenger_dashboard(request):
 
 @login_required
 def driver_dashboard(request):
+    """Driver dashboard - only accessible if verified"""
+    try:
+        driver_profile = request.user.driverprofile
+        if not driver_profile.is_verified:
+            return redirect('driver_pending')
+    except DriverProfile.DoesNotExist:
+        return redirect('driver_pending')
+    
     return render(request, 'dashboard_driver.html')
 
 @login_required
+def driver_pending(request):
+    """Driver pending verification page"""
+    try:
+        driver_profile = request.user.driverprofile
+    except DriverProfile.DoesNotExist:
+        # If no driver profile exists, create one (fallback)
+        driver_profile = DriverProfile.objects.create(
+            user=request.user,
+            license_number="Not provided",
+            years_experience=0
+        )
+    
+    return render(request, 'driver_first.html', {
+        'driver_profile': driver_profile
+    })
+    
+@login_required
 def admin_dashboard(request):
     return render(request, 'dashboard_admin.html')
+
+def save(self, commit=True):
+    user = super().save(commit=False)
+    user.user_type = 'driver'
+    user.first_name = self.cleaned_data['first_name']
+    user.last_name = self.cleaned_data['last_name']
+    user.email = self.cleaned_data['email']
+    user.phone = self.cleaned_data['phone']
+    
+    if commit:
+        user.save()
+        # Create driver profile with is_verified=False
+        DriverProfile.objects.create(
+            user=user,
+            license_number=self.cleaned_data['license_number'],
+            years_experience=self.cleaned_data['years_experience'],
+            is_verified=False  # Default to not verified
+        )
+    return user
