@@ -52,35 +52,37 @@
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="{% url 'user_home' %}">
-                <i class="bi bi-bus-front"></i> Bus Tracking System
-            </a>
-            
-            <div class="navbar-nav ms-auto">
-                <div class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle me-1"></i> {{ user.username }}
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{% url 'profile_dashboard' %}">
-                            <i class="bi bi-person me-2"></i>My Profile
-                        </a></li>
-                        <li><a class="dropdown-item" href="#">
-                            <i class="bi bi-clock-history me-2"></i>Booking History
-                        </a></li>
-                        <li><a class="dropdown-item" href="#">
-                            <i class="bi bi-gear me-2"></i>Settings
-                        </a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="{% url 'logout' %}">
-                            <i class="bi bi-box-arrow-right me-2"></i>Logout
-                        </a></li>
-                    </ul>
-                </div>
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'user_home' %}">
+            <i class="bi bi-bus-front"></i> Bus Tracking System
+        </a>
+        
+        <div class="navbar-nav ms-auto">
+            <div class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-person-circle me-1"></i> {{ user.username }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'profile_dashboard' %}">
+                        <i class="bi bi-person me-2"></i>Profile Dashboard
+                    </a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="{% url 'logout' %}">
+                        <i class="bi bi-box-arrow-right me-2"></i>Logout
+                    </a></li>
+                </ul>
             </div>
         </div>
-    </nav>
+    </div>
+</nav>
+<div class="card-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Account Information</h6>
+        <a href="{% url 'user_home' %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-house me-1"></i>Back to Home
+        </a>
+    </div>
+</div>
 
     <div class="container mt-4">
         <div class="row">
